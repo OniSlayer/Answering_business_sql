@@ -1,0 +1,129 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.1'
+      jupytext_version: 1.1.3
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
+---
+
+```{python}
+import sqlite3
+import pandas as pd
+conn = sqlite3.connect("chinook.db")
+#Testing the connection and displaying all the tables in the db
+pd.read_sql_query("SELECT * FROM sqlite_master WHERE type = 'table'", conn)
+```
+
+```{python}
+def run_query(q):
+    with sqlite3.connect('chinook.db') as conn:
+        return pd.read_sql(q, conn)
+```
+
+```{python}
+conn.close()
+```
+
+```{python}
+# %matplotlib inline
+```
+
+```{python}
+import matplotlib.pyplot as plt
+```
+
+```{python}
+run_query("SELECT * FROM TRACK LIMIT 5")
+```
+
+```{python}
+def run_command(c):
+    with sqlite3.connect('chinook.db') as conn:
+        conn.isolation_level = None
+        conn.execute(c)
+```
+
+```{python}
+def show_tables():
+    return run_query("SELECT * FROM sqlite_master WHERE type IN ('table', 'view')")
+```
+
+```{python}
+show_tables()
+```
+
+```{python}
+run_query('''select * from invoice_line limit 5''')
+```
+
+```{python}
+#Getting the number of tracks per genres and ordering to fing the most popular genres
+genres_absolute = run_query('''
+select genre.name, count(track.track_id)  as number_of_tracks
+from track 
+inner join genre on genre.genre_id = track.genre_id
+inner join invoice_line on invoice_line.track_id = track.track_id
+group by 1
+order by 2 desc
+''')
+```
+
+```{python}
+#Getting the number of tracks per genres and ordering to fing the most popular genres (by percentage)
+genres_by_percentage = run_query('''
+select genre.name, cast(count(track.track_id) as float) / (select count(track_id) from track) * 100  as number_of_tracks 
+from track 
+inner join genre on genre.genre_id = track.genre_id
+inner join invoice_line on invoice_line.track_id = track.track_id
+group by 1
+order by 2 desc
+''')
+```
+
+```{python}
+# Showing a graph for genres by percentage
+import numpy as np
+y_pos = np.arange(len(genres_by_percentage['name']))
+
+plt.barh(y_pos, genres_by_percentage['number_of_tracks'], align = 'center', alpha= 0.5)
+plt.yticks(x_pos, genres_by_percentage['name'])
+
+plt.show()
+```
+
+```{python}
+#Graph of genres by absolute value
+y_pos = np.arange(len(genres_absolute))
+plt.barh(y_pos, genres_absolute["number_of_tracks"])
+plt.yticks(y_pos,genres_absolute["name"])
+
+plt.show()
+```
+
+```{python}
+sales_by_employee = run_query('''select employee.*, count(invoice.invoice_id), sum(invoice.total), sum(invoice.total) / (select sum(total) from invoice)*100 from invoice
+inner join customer on invoice.customer_id = customer.customer_id
+inner join employee on customer.support_rep_id = employee.employee_id
+group by employee.employee_id
+limit 10
+''')
+print(sales_by_employee)
+```
+
+```{python}
+y_pos = np.arange(len(sales_by_employee['first_name']))
+#sales_by_employee.sort_values("sum(invoice.total)", inplace = True)
+plt.barh(y_pos, sales_by_employee['sum(invoice.total)'])
+plt.yticks(y_pos,sales_by_employee['first_name'])
+plt.show()
+```
+
+```{python}
+
+```
