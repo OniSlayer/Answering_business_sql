@@ -125,5 +125,57 @@ plt.show()
 ```
 
 ```{python}
+# Get information by country.
+#Note the use of an outer value in the when statement from the renamed_countries subquery.
 
+run_query('''
+with 
+
+renamed_countries as (
+select *,
+case 
+    when (select count(*) from customer where country = c.country) = 1 then "Other"
+    else country
+    end as country_names,
+case
+    when (select count(*) from customer where country = c.country) = 1 then 1
+    else 0
+    end as sorted_column
+    
+from customer as c
+),
+
+customers_per_country as (
+select country_names, count(customer_id) as total_customers, sorted_column
+from renamed_countries
+group by country_names
+),
+
+invoices_and_total_per_customer as (
+select sum(invoice.total) as total_sales,
+renamed_countries.country_names as country_names,
+count(invoice.total) as total_invoices,
+sorted_column
+from renamed_countries 
+inner join invoice on invoice.customer_id = renamed_countries.customer_id
+group by renamed_countries.country_names
+)
+
+select 
+invoices_and_total_per_customer.country_names as country_names,
+total_sales,
+total_invoices,
+total_customers,
+total_sales / total_customers as average_sale_per_customer,
+total_sales / total_invoices as average_order_value
+from invoices_and_total_per_customer 
+inner join customers_per_country on customers_per_country.country_names = invoices_and_total_per_customer.country_names
+order by invoices_and_total_per_customer.sorted_column, total_sales desc
+''')
+```
+
+```{python}
+run_query('''
+select * from invoice
+''')
 ```
