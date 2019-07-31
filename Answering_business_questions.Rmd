@@ -128,7 +128,7 @@ plt.show()
 # Get information by country.
 #Note the use of an outer value in the when statement from the renamed_countries subquery.
 
-run_query('''
+info_for_country = run_query('''
 with 
 
 renamed_countries as (
@@ -172,10 +172,68 @@ from invoices_and_total_per_customer
 inner join customers_per_country on customers_per_country.country_names = invoices_and_total_per_customer.country_names
 order by invoices_and_total_per_customer.sorted_column, total_sales desc
 ''')
+print(info_for_country)
+```
+
+```{python}
+x_pos = np.arange(len(info_for_country['country_names']))
+plt.bar(x_pos, info_for_country['total_sales'], align = 'center')
+plt.xticks(x_pos, info_for_country['country_names'], rotation = 'vertical')
+plt.show()
+```
+
+```{python}
+x_pos = np.arange(len(info_for_country['country_names']))
+plt.bar(x_pos, info_for_country['total_invoices'], align = 'center')
+plt.xticks(x_pos, info_for_country['country_names'], rotation = 'vertical')
+plt.show()
+```
+
+```{python}
+x_pos = np.arange(len(info_for_country['country_names']))
+plt.bar(x_pos, info_for_country['total_customers'], align = 'center')
+plt.xticks(x_pos, info_for_country['country_names'], rotation = 'vertical')
+plt.show()
+```
+
+```{python}
+x_pos = np.arange(len(info_for_country['country_names']))
+plt.bar(x_pos, info_for_country['average_sale_per_customer'], align = 'center')
+plt.xticks(x_pos, info_for_country['country_names'], rotation = 'vertical')
+plt.show()
 ```
 
 ```{python}
 run_query('''
-select * from invoice
+
+where songs_per_invoice AS (
+select invoice.*, track.* from invoice 
+inner join invoice_line on invoice_line.invoice_id = invoice.invoice_id
+inner join track on invoice_line.track_id = track.track_id
+)
+
+select *,
+case
+    when (select (*) where invoice_id = songs_per_invoice.invoice_id)
+from songs_per_invoice 
 ''')
+```
+
+```{python}
+run_query('''
+where todo_data as (
+SELECT
+         il.invoice_id invoice_id,
+         MIN(il.track_id) first_track_id
+     FROM invoice_line il
+     GROUP BY 1
+
+)
+                 
+select * from todo_data inner join 
+''')
+```
+
+```{python}
+
 ```
