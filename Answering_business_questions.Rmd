@@ -204,33 +204,60 @@ plt.show()
 ```
 
 ```{python}
-run_query('''
+# Last Exercise
+# Check how the when statements are applied to each row of invoice_and_track (i.e. when access to each row of the 
+# invoice and track table and executes the conditional) Here, "when" is used first to retrieve all the tracks_ids from 
+# the track table where the album_id is the same as the album_id from the first track on the invoice_and_track
+# row (a subquery is necessary for this, because you don't have the album id on the iat table)
+# Then you retrieve all the songs for the invoice number using the same when conditional and use except to get the 
+# different rows between this two tables. The other statement is the same, but inverting the order. First you fetch
+# all the tracks from the invoice and get the difference from all the tracks of the album. 
+# Using "is null", you can know if there are rows left.
 
-where songs_per_invoice AS (
-select invoice.*, track.* from invoice 
-inner join invoice_line on invoice_line.invoice_id = invoice.invoice_id
-inner join track on invoice_line.track_id = track.track_id
+run_query('''
+with invoice_and_track as (
+select invoice_id, min(track_id) as track_id from invoice_line group by invoice_id 
 )
 
-select *,
-case
-    when (select (*) where invoice_id = songs_per_invoice.invoice_id)
-from songs_per_invoice 
-''')
-```
+select count(invoice_id) as number_of_invoices, album_purchase,  
+count(invoice_id)/cast((select count(*) from invoice_and_track)as float) * 100 as percentage
+from (
+    select *,
+        case
+        
+        
+            when(
+            
+            select track_id from track where album_id = (select album_id from track where track_id = invoice_and_track.track_id )
+            
+            EXCEPT
+            
+            select track_id from invoice_line where invoice_id = invoice_and_track.invoice_id
+            
+            ) IS NULL 
+            
+            and
+            
+            (
+            
+            select track_id from invoice_line where invoice_id = invoice_and_track.invoice_id
+            
+            EXCEPT
+            
+            select track_id from track where album_id = (select album_id from track where track_id = invoice_and_track.track_id)
+            
+            ) IS NULL
+            then "yes"
+            
+            else "no"
+            end as album_purchase
 
-```{python}
-run_query('''
-where todo_data as (
-SELECT
-         il.invoice_id invoice_id,
-         MIN(il.track_id) first_track_id
-     FROM invoice_line il
-     GROUP BY 1
+    from invoice_and_track
 
-)
-                 
-select * from todo_data inner join 
+) 
+group by album_purchase
+order by album_purchase desc
+
 ''')
 ```
 
